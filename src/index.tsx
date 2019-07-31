@@ -1,36 +1,76 @@
 /**
  * declares and imports of namespaces, interfaces & types
  */
- export interface IUploader {
-   children?: any;
-   width?: number;
-   height?: number;
- }
+export interface IUploader {
+  children?: any;
+  width?: number;
+  height?: number;
+  address?: string;
+  onProgress?: (percent: number) => void;
+  onFail?: () => void;
+  onCancel?: () => void;
+  onFinished?: () => void;
+  onComplete?: (response: Response) => void;
+  onFileAdd?: (file: File) => void;
+  onFormData?: (form: FormData) => void;
+  onRequest?: (req: XMLHttpRequest) => void;
+}
 
  /**
   * imports of packages
   */
 import React from 'react';
+import 'whatwg-fetch';
 
 /**
  * imports of styles
  */
 import { UploaderInput, UploaderSection } from './index.styles'
 
-
+function parseHeaders(rawHeaders: string) {
+  const headers = new Headers();
+  // Replace instances of \r\n and \n followed by at least one space or horizontal tab with a space
+  // https://tools.ietf.org/html/rfc7230#section-3.2
+  const preProcessedHeaders = rawHeaders.replace(/\r?\n[\t ]+/g, ' ');
+  preProcessedHeaders.split(/\r?\n/).forEach(function(line) {
+    const parts = line.split(':');
+    const key = parts.shift();
+    if (key) {
+      const value = parts.join(':').trim();
+      headers.append(key.trim(), value);
+    }
+  })
+  return headers;
+}
 
 const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
   const updateProgress = function(this: XMLHttpRequestUpload, ev: ProgressEvent) {
-    this
+    if (props.onProgress) {
+      props.onProgress(ev.loaded / ev.total * 100)
+    }
   };
   const transferComplete = function(this: XMLHttpRequestUpload, ev: ProgressEvent) {
-    this
+    if (props.onFinished) {
+      props.onFinished();
+    }
   };
   const transferFailed = function(this: XMLHttpRequestUpload, ev: ProgressEvent) {
-    this
+    if (props.onFail) {
+      props.onFail();
+    }
   };
   const transferCanceled  = function(this: XMLHttpRequestUpload, ev: ProgressEvent) {
-    this
+    if (props.onCancel) {
+      props.onCancel();
+    }
+  };
+  const reqComplete  = function(this: XMLHttpRequest, ev: ProgressEvent) {
+    if (props.onComplete) {
+      const {status, statusText, getAllResponseHeaders} = this;
+      const headers = parseHeaders(getAllResponseHeaders() || '');
+      const res = new Response(this.response, {status, statusText, headers});
+      props.onComplete(res);
+    }
   };
 
   const doUpload = (file: File) => {
@@ -46,6 +86,7 @@ const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
     req.upload.addEventListener("load", transferComplete);
     req.upload.addEventListener("error", transferFailed);
     req.upload.addEventListener("abort", transferCanceled);
+    req.addEventListener('load', reqComplete)
   }
   
   const onDrop = (ev: React.DragEvent<HTMLDivElement>) => {  // Prevent default behavior (Prevent file from being opened)
