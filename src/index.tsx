@@ -27,6 +27,8 @@ import 'whatwg-fetch';
  */
 import { UploaderInput, UploaderSection } from './index.styles'
 
+type InputFile = string | number | string[] | undefined;
+
 function parseHeaders(rawHeaders: string) {
   const headers = new Headers();
   // Replace instances of \r\n and \n followed by at least one space or horizontal tab with a space
@@ -44,6 +46,7 @@ function parseHeaders(rawHeaders: string) {
 }
 
 const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
+  // const [value, setValue] = React.useState<InputFile>(undefined)
   const updateProgress = function(this: XMLHttpRequestUpload, ev: ProgressEvent) {
     if (props.onProgress) {
       props.onProgress(ev.loaded / ev.total * 100)
@@ -65,7 +68,11 @@ const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
     }
   };
   const reqComplete  = function(this: XMLHttpRequest, ev: ProgressEvent) {
-    if (props.onComplete) {
+    if (this.status !== 200 && this.status !== 201) {
+      if (props.onFail) {
+        props.onFail();
+      }
+    } else if (props.onComplete) {
       const {status, statusText, getAllResponseHeaders} = this;
       const headers = parseHeaders(getAllResponseHeaders() || '');
       const res = new Response(this.response, {status, statusText, headers});
@@ -80,13 +87,15 @@ const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
   
     const req = new XMLHttpRequest();
     req.open('POST', '');
-    req.send(data);
 
     req.upload.addEventListener("progress", updateProgress);
     req.upload.addEventListener("load", transferComplete);
     req.upload.addEventListener("error", transferFailed);
     req.upload.addEventListener("abort", transferCanceled);
     req.addEventListener('load', reqComplete)
+    req.addEventListener('timeout', transferFailed)
+
+    req.send(data);
   }
   
   const onDrop = (ev: React.DragEvent<HTMLDivElement>) => {  // Prevent default behavior (Prevent file from being opened)
@@ -110,6 +119,8 @@ const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
   }
   
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // @ts-ignore
+
     const { files } = event.target;
     if (files === null || files.length < 1) {
       return;
@@ -122,7 +133,9 @@ const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
     <span>Drag a photo here or click to choose file</span>
     {children}
   </div>
-  <input style={UploaderInput} onDrop={onDrop} type={'file'} onChange={onChange} />
+  <input style={UploaderInput} onDrop={onDrop} type={'file'} accept="image/*"  
+    multiple={false}
+    onChange={e=> onChange(e)} />
   </>
 
   if (width || height) {

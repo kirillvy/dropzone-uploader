@@ -1,8 +1,12 @@
 var path = require('path');
+
+var prodPath = 'lib';
+var devPath = require('./devPath') || lib;
+
 module.exports = {
   entry: './src/index.tsx',
   output: {
-    path: path.resolve(__dirname, 'lib'),
+    path: path.join(__dirname, process.env.NODE_ENV === 'local' ? devPath : prodPath),
     filename: 'index.js',
     library: 'dropzone',
     libraryTarget: 'umd'// THIS IS THE MOST IMPORTANT LINE! :mindblow: I wasted more than 2 days until realize this was the line most important in all this guide.
@@ -11,7 +15,8 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        loader: 'ts-loader',
+        options: { compilerOptions: { outDir: path.join(__dirname, process.env.NODE_ENV === 'local' ? devPath : prodPath) } },
         exclude: /node_modules/
       }
     ]

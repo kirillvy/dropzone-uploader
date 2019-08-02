@@ -1,6 +1,6 @@
 {
   "name": "react-dropzone-file-uploader",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A configurable file uploader",
   "main": "./lib/index.js",
   "files": [
@@ -14,6 +14,7 @@
   ],
   "scripts": {
     "build": "rm -rf ./lib &&./node_modules/.bin/webpack --mode production --config=webpack.config.js",
+    "build:dev": "NODE_ENV=local ./node_modules/.bin/webpack --mode development --config=webpack.config.js",
     "test": "test",
     "test:jest": "CI=TRUE node --max_old_space_size=4096 ./node_modules/jest/bin/jest.js --env=jsdom --colors --coverage test'",
     "docs:storybook:run": "node --max_old_space_size=4096 ./node_modules/.bin/start-storybook -s ./src -p 6006",

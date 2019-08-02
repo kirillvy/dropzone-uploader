@@ -39,3 +39,4 @@ logs
 .vscode
 .idea
 .gitsecret/keys/random_seed
+devPath.js
