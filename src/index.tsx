@@ -45,7 +45,7 @@ function parseHeaders(rawHeaders: string) {
   return headers;
 }
 
-const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
+const Uploader: React.FC<IUploader> = ({width, height, address, children, ...props}) => {
   // const [value, setValue] = React.useState<InputFile>(undefined)
   const updateProgress = function(this: XMLHttpRequestUpload, ev: ProgressEvent) {
     if (props.onProgress) {
@@ -74,28 +74,30 @@ const Uploader: React.FC<IUploader> = ({width, height, children, ...props}) => {
       }
     } else if (props.onComplete) {
       const {status, statusText, getAllResponseHeaders} = this;
-      const headers = parseHeaders(getAllResponseHeaders() || '');
-      const res = new Response(this.response, {status, statusText, headers});
+      // const headers = parseHeaders(getAllResponseHeaders() || '');
+      // const headers = parseHeaders(getAllResponseHeaders() || '');
+      const res = new Response(this.response, {status, statusText, headers: undefined});
       props.onComplete(res);
     }
   };
 
   const doUpload = (file: File) => {
-
-    const data = new FormData();
-    data.append('inputname', file);
+    if(address){
+      const data = new FormData();
+      data.append('file', file);
+    
+      const req = new XMLHttpRequest();
+      req.open('POST', address);
   
-    const req = new XMLHttpRequest();
-    req.open('POST', '');
-
-    req.upload.addEventListener("progress", updateProgress);
-    req.upload.addEventListener("load", transferComplete);
-    req.upload.addEventListener("error", transferFailed);
-    req.upload.addEventListener("abort", transferCanceled);
-    req.addEventListener('load', reqComplete)
-    req.addEventListener('timeout', transferFailed)
-
-    req.send(data);
+      req.upload.addEventListener("progress", updateProgress);
+      req.upload.addEventListener("load", transferComplete);
+      req.upload.addEventListener("error", transferFailed);
+      req.upload.addEventListener("abort", transferCanceled);
+      req.addEventListener('load', reqComplete)
+      req.addEventListener('timeout', transferFailed)
+  
+      req.send(data);
+    }
   }
   
   const onDrop = (ev: React.DragEvent<HTMLDivElement>) => {  // Prevent default behavior (Prevent file from being opened)
