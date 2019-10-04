@@ -1,11 +1,18 @@
 /**
  * declares and imports of namespaces, interfaces & types
  */
+export interface IFormData {
+  album_id: number;
+  wid: string;
+}
+
 export interface IUploader {
   children?: any;
   width?: number;
   height?: number;
   address?: string;
+  formData?: IFormData;
+  multiple?: boolean;
   onProgress?: (percent: number) => void;
   onFail?: () => void;
   onCancel?: () => void;
@@ -45,7 +52,7 @@ function parseHeaders(rawHeaders: string) {
   return headers;
 }
 
-const Uploader: React.FC<IUploader> = ({width, height, address, children, ...props}) => {
+const Uploader: React.FC<IUploader> = ({width, height, address, formData, children, multiple, ...props}) => {
   // const [value, setValue] = React.useState<InputFile>(undefined)
   const updateProgress = function(this: XMLHttpRequestUpload, ev: ProgressEvent) {
     if (props.onProgress) {
@@ -81,10 +88,14 @@ const Uploader: React.FC<IUploader> = ({width, height, address, children, ...pro
     }
   };
 
-  const doUpload = (file: File) => {
+  const doUpload = (file: File, formData?: any) => {
     if(address){
       const data = new FormData();
+      
       data.append('file', file);
+      for (let key in formData) {
+        data.append(key, formData[key]);
+      }
     
       const req = new XMLHttpRequest();
       req.open('POST', address);
@@ -99,35 +110,26 @@ const Uploader: React.FC<IUploader> = ({width, height, address, children, ...pro
       req.send(data);
     }
   }
+
+  const prepareFiles = (files: any) => {
+    if (files === null || files.length < 1) {
+      return;
+    };
+    for (let i = 0; i < files.length; i++) {
+      doUpload(files[i], formData);
+    }
+  }
   
   const onDrop = (ev: React.DragEvent<HTMLDivElement>) => {  // Prevent default behavior (Prevent file from being opened)
     ev.preventDefault();
-    const {items} = ev.dataTransfer;
-    if (items && items.length > 0 && ev.dataTransfer.items[0].kind === 'file') {
-      // Use DataTransferItemList interface to access the file(s)
-        if (ev.dataTransfer.items[0].kind === 'file') {
-          const file = ev.dataTransfer.items[0].getAsFile();
-          if (file !== null) {
-            doUpload(file);
-          }
-        }
-    } else {
-      const { files } = ev.dataTransfer;
-      if (files === null || files.length < 1) {
-        return;
-      }
-      doUpload(files[0]);
-    }
+    const { files } = ev.dataTransfer;
+    prepareFiles(files);
   }
   
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // @ts-ignore
-
     const { files } = event.target;
-    if (files === null || files.length < 1) {
-      return;
-    }
-    doUpload(files[0]);
+    prepareFiles(files);
   }
 
   const el = <>
@@ -136,7 +138,7 @@ const Uploader: React.FC<IUploader> = ({width, height, address, children, ...pro
     {children}
   </div>
   <input style={UploaderInput} onDrop={onDrop} type={'file'} accept="image/*"  
-    multiple={false}
+    multiple={multiple}
     onChange={e=> onChange(e)} />
   </>
 
