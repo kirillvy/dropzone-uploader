@@ -138,7 +138,7 @@ const Uploader: React.FC<IUploader> = ({width, height, address, formData, childr
     {children}
   </div>
   <input style={UploaderInput} onDrop={onDrop} type={'file'} accept="image/*"  
-    multiple={multiple}
+    multiple={multiple || false}
     onChange={e=> onChange(e)} />
   </>
 
